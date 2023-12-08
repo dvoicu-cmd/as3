@@ -1,5 +1,6 @@
 package src;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.Vector;
 
@@ -18,7 +19,7 @@ class Raytracer {
     /** Main Method */
     public static void main(String[] args) {
         // 1) first from cli args, grab the first argument
-        File inFile = new File(args[0]);
+       //File inFile = new File(args[0]);
 
         // 2) Parse the arguments into usable data.
 
@@ -28,7 +29,8 @@ class Raytracer {
 
         // 5) output bit map file produced from array.
 
-
+        Canvas c = new Canvas(400, 400, 0,0,0,0,0,0, "ayo.png");
+        c.exportImage();
 
     }
 
