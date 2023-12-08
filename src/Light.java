@@ -5,5 +5,9 @@ package src;
  */
 class Light {
 
+    public Light(){
+
+    }
+
 }
 

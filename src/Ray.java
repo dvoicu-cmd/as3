@@ -7,4 +7,8 @@ import java.util.Vector;
  */
 class Ray {
 
+    public Ray(){
+
+    }
+
 }
