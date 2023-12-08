@@ -5,4 +5,7 @@ package src;
  */
 class Sphere {
 
+    public Sphere(){
+
+    }
 }
