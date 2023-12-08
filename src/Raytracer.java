@@ -13,7 +13,6 @@ class Raytracer {
     /** Number of command line arguments.
     private int numArgs;
 
-
     private Canvas canvas;
 
     /** The camera object of the scene */
