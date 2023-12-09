@@ -31,4 +31,13 @@ class Camera {
         this.bottom = bottom;
     }
 
+    //How to impliment near/far plane?
+    public void nearPlane() {
+
+    }
+
+    public void farPlane() {
+
+    }
+
 }
