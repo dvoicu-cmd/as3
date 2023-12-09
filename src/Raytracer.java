@@ -1,5 +1,6 @@
 package src;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
@@ -12,6 +13,9 @@ import java.util.Vector;
 class Raytracer {
     static ArrayList<Sphere> spheres = new ArrayList<>();
     static Camera camera;
+    static BufferedReader reader;
+    static Canvas canvas;
+
     /** Number of command line arguments.
     private int numArgs;
 
@@ -33,38 +37,49 @@ class Raytracer {
         File inFile = new File(args[0]);
 
         //Attempt to read file
-        BufferedReader reader;
 
-        //Store the lines in a list of strings
-        ArrayList<String> lineArgs = new ArrayList<String>();
 
         // credit https://www.digitalocean.com/community/tutorials/java-read-file-line-by-line
         try {
             //Read the file path from args
             reader = new BufferedReader(new FileReader(inFile));
 
-            float near = Float.parseFloat(reader.readLine().split(" ")[1]);
-            float left = Float.parseFloat(reader.readLine().split(" ")[1]);
-            float right = Float.parseFloat(reader.readLine().split(" ")[1]);
-            float bottom = Float.parseFloat(reader.readLine().split(" ")[1]);
-            float top = Float.parseFloat(reader.readLine().split(" ")[1]);
-            camera = new Camera(near, left, right, top, bottom);
+            // Camera Parameters
+            float near = Float.parseFloat(next()[1]);
+            float left = Float.parseFloat(next()[1]);
+            float right = Float.parseFloat(next()[1]);
+            float bottom = Float.parseFloat(next()[1]);
+            float top = Float.parseFloat(next()[1]);
+            String[] l = next();
+            int resolutionX = Integer.parseInt(l[1]);
+            int resolutionY = Integer.parseInt(l[2]);
 
-            //Read each line into the arraylist until the end of file
-            String line = reader.readLine();
-            String[] line_args;
-            while(line != null){
-                line_args = line.split(" ");
-                if (line_args[0].compareTo("SPHERE") == 0){
-                    spheres.add(new Sphere(line_args));
-                }
-
-                lineArgs.add(line);
-                line = reader.readLine();
-
+            String[] line_args = next();
+            while(line_args[0].compareTo("SPHERE") == 0){
+                spheres.add(new Sphere(line_args));
+                line_args = next();
             }
+
+            while(line_args[0].compareTo("LIGHT") == 0){
+                // TODO: Call light constructor
+                line_args = next();
+            }
+
+            int[] back = color_to_255(Float.parseFloat(line_args[1]), Float.parseFloat(line_args[2]), Float.parseFloat(line_args[3]));
+            line_args = next();
+            float[] ambient = new float[] {Float.parseFloat(line_args[1]), Float.parseFloat(line_args[2]), Float.parseFloat(line_args[3])};
+            canvas = new Canvas(back, ambient);
+
+            String file_name = next()[1];
+            camera = new Camera(near, left, right, top, bottom, resolutionX, resolutionY, file_name);
+
+
             reader.close();
         }
+
+
+
+
         catch(IOException e) {
             e.printStackTrace();
         }
@@ -79,27 +94,22 @@ class Raytracer {
 
         // 5) output bit map file produced from array.
 
-        Canvas c = new Canvas(400, 400, 0,0,0,0,0,0, "ayo.png");
-        c.exportImage();
+        camera.exportImage();
 
     }
 
     /**
-     * Splits a string argument by it's spaces into an array of strings.
-     * @param str string argument
+     * Shorthand for reading in a new line and splitting it on spaces.
      * @return list of strings
      */
-    private String[] splitSpace(String str){
-        String[] split = str.split(" ");
-        return split;
+    private static String[] next() throws IOException {
+        return reader.readLine().split(" ");
     }
 
     // takes in a color array on range 0-1 and restates it as 0-255
     static int[] color_to_255(float r, float g, float b){
         return new int[]{Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)};
     }
-
-
 
 
 
