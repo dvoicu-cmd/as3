@@ -68,7 +68,7 @@ class Canvas {
         try {
             File out = new File(file_name);
             ImageIO.write(image, "png", out);
-            System.out.println(file_name + "exported successfully.");
+            System.out.println(file_name + " exported successfully.");
 
         } catch (IOException e) {
             throw new RuntimeException(e);

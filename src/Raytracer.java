@@ -10,7 +10,7 @@ import java.util.Vector;
  * Main class that handles file io and execution.
  */
 class Raytracer {
-
+    static ArrayList<Sphere> spheres = new ArrayList<>();
     /** Number of command line arguments.
     private int numArgs;
 
@@ -43,11 +43,18 @@ class Raytracer {
             reader = new BufferedReader(new FileReader(inFile));
             //Line variable
             String line = reader.readLine();
+            String[] line_args;
 
             //Read each line into the arraylist until the end of file
             while(line != null){
+                line_args = line.split(" ");
+                if (line_args[0].compareTo("SPHERE") == 0){
+                    spheres.add(new Sphere(line_args));
+                }
+
                 lineArgs.add(line);
                 line = reader.readLine();
+
             }
             reader.close();
         }
@@ -78,6 +85,11 @@ class Raytracer {
     private String[] splitSpace(String str){
         String[] split = str.split(" ");
         return split;
+    }
+
+    // takes in a color array on range 0-1 and restates it as 0-255
+    static int[] color_to_255(float r, float g, float b){
+        return new int[]{Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)};
     }
 
 
