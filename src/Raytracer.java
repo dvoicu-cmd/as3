@@ -11,6 +11,7 @@ import java.util.Vector;
  */
 class Raytracer {
     static ArrayList<Sphere> spheres = new ArrayList<>();
+    static Camera camera;
     /** Number of command line arguments.
     private int numArgs;
 
@@ -41,11 +42,17 @@ class Raytracer {
         try {
             //Read the file path from args
             reader = new BufferedReader(new FileReader(inFile));
-            //Line variable
-            String line = reader.readLine();
-            String[] line_args;
+
+            float near = Float.parseFloat(reader.readLine().split(" ")[1]);
+            float left = Float.parseFloat(reader.readLine().split(" ")[1]);
+            float right = Float.parseFloat(reader.readLine().split(" ")[1]);
+            float bottom = Float.parseFloat(reader.readLine().split(" ")[1]);
+            float top = Float.parseFloat(reader.readLine().split(" ")[1]);
+            camera = new Camera(near, left, right, top, bottom);
 
             //Read each line into the arraylist until the end of file
+            String line = reader.readLine();
+            String[] line_args;
             while(line != null){
                 line_args = line.split(" ");
                 if (line_args[0].compareTo("SPHERE") == 0){
