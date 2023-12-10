@@ -25,4 +25,12 @@ class Sphere {
         this.kr = Float.parseFloat(args[14]);
         this.spec_exp = Integer.parseInt(args[15]);
     }
+
+    public Sphere(int[] c){
+        this.color = c;
+    }
+
+    int getColorInt(){
+        return Raytracer.rgb_array_to_int(color);
+    }
 }

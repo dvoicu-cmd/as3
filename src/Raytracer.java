@@ -1,10 +1,7 @@
 package src;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Vector;
 
 
 /**
@@ -31,7 +28,7 @@ class Raytracer {
     //private ArrayList<Light> lights;
 
     /** Main Method */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args){
         // 1) Read cli args.
         // grab the first argument. Maybe make it handle multiple files later on
         File inFile = new File(args[0]);
@@ -93,14 +90,14 @@ class Raytracer {
         // 4) Perform ray tracing algorithm and store results into an array.
 
         // 5) output bit map file produced from array.
-
+        camera.raytrace();
         camera.exportImage();
 
     }
 
     /**
      * Shorthand for reading in a new line and splitting it on spaces.
-     * @return list of strings
+     * @return String array
      */
     private static String[] next() throws IOException {
         return reader.readLine().split(" ");
@@ -109,6 +106,14 @@ class Raytracer {
     // takes in a color array on range 0-1 and restates it as 0-255
     static int[] color_to_255(float r, float g, float b){
         return new int[]{Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)};
+    }
+
+    static int rgb_array_to_int(int[] rgb){
+        int ret = 0;
+        ret += rgb[0];
+        ret = (ret <<8) + rgb[1];
+        ret = (ret <<8) + rgb[2];
+        return ret + 0xFF000000; //alpha channel maxed out
     }
 
 
