@@ -21,6 +21,8 @@ class Camera {
     private final int resolutionY;
     private final int[] pixels;
 
+    double lowest_discriminant = 99999; // TEMP DEBUG
+
     /**
      * Constructor method
      * @param near
@@ -54,7 +56,7 @@ class Camera {
     // Given a pixel coordinate, get a direction vector pointing to it (DOES IT NEED TO BE NORMALIZED?)
     public float[] getDirectionVector(int x, int y){
         float pixel_world_x = left + ((right-left)/resolutionX) * x;
-        float pixel_world_y = top - ((bottom-top)/resolutionY) * y;
+        float pixel_world_y = top + ((bottom-top)/resolutionY) * y;
         return new float[]{pixel_world_x, pixel_world_y, near};
     }
 
@@ -63,11 +65,44 @@ class Camera {
     public boolean ray_collides(Sphere s, float[] vec){
         // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
         double a = Math.pow(vec[0],2) + Math.pow(vec[1],2) + Math.pow(vec[2], 2);
+        double b = (s.pos[0] * vec[0] + s.pos[1] * vec[1] + s.pos[2] * vec[2]);
+        double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
+
+        double discriminant = Math.pow(b,2) - a*c;
+        if (discriminant < lowest_discriminant) {
+            lowest_discriminant = discriminant;
+        }
+
+        return discriminant >= 0;
+    }
+
+
+    /**
+    public double get_discriminant(Sphere s, float[] vec){
+        // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
+        double a = Math.pow(vec[0],2) + Math.pow(vec[1],2) + Math.pow(vec[2], 2);
         double b = -2 * (s.pos[0] * vec[0] + s.pos[1] * vec[1] + s.pos[2] * vec[2]);
         double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1;
 
         double discriminant = Math.pow(b,2) - a*c;
-        return discriminant >= 0;
+        return discriminant;
+    }
+
+    public int discriminant_visualization(double discriminant){
+        if (discriminant > 0) return 0xFFFFFFFF;
+        if(discriminant == 0) return 0xFFFF0000;
+
+        int white = (int) Math.floor(discriminant / -729.0) * 256;
+        return Raytracer.rgb_array_to_int(new int[] {white, white, white});
+    }
+*/
+
+    public void apply_background_color(){
+        for (int x = 0; x < resolutionX; x++){
+            for (int y =0; y < resolutionY; y++){
+                pixels[x + y*resolutionX] = Raytracer.canvas.getBackgroundColorInt();
+            }
+        }
     }
 
     // This will be the algorithm itself.
@@ -82,12 +117,10 @@ class Camera {
                     if (ray_collides(s, dir_vec)){
                         pixels[position] = s.getColorInt();
                     }
-                    else {
-                        pixels[position] = Raytracer.canvas.getBackgroundColorInt();
-                    }
                 }
             }
         }
+        System.out.println("Lowest discrim: " + lowest_discriminant);
     }
 
     public void exportImage() {

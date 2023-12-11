@@ -90,6 +90,7 @@ class Raytracer {
         // 4) Perform ray tracing algorithm and store results into an array.
 
         // 5) output bit map file produced from array.
+        camera.apply_background_color();
         camera.raytrace();
         camera.exportImage();
 
