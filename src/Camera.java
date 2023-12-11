@@ -32,7 +32,7 @@ class Camera {
      * @param bottom
      */
     public Camera(float near, float left, float right, float top, float bottom, int resolutionX, int resolutionY, String file_name) {
-        this.near = near;
+        this.near = -1*near;
         this.left = left;
         this.right = right;
         this.top = top;
@@ -41,31 +41,27 @@ class Camera {
         this.image = new BufferedImage(resolutionX, resolutionY, BufferedImage.TYPE_INT_ARGB);
         this.resolutionX = resolutionX;
         this.resolutionY = resolutionY;
-
-        // TEMPORARY: SET THE IMAGE TO A HARDCODED VALUE
         this.pixels = new int[resolutionX * resolutionY];
-        for (int i = 0; i < 600 * 10; i++) {
-            pixels[i] = 0xFF1fafa8;
-        }
-
-        for (int i = 600 * 10; i < 600 * 20; i++) {
-            pixels[i] = 0xFF26c609;
-        }
     }
 
     // Given a pixel coordinate, get a direction vector pointing to it (DOES IT NEED TO BE NORMALIZED?)
-    public float[] getDirectionVector(int x, int y){
+    public Matrix getDirectionVector(int x, int y){
         float pixel_world_x = left + ((right-left)/resolutionX) * x;
         float pixel_world_y = top + ((bottom-top)/resolutionY) * y;
-        return new float[]{pixel_world_x, pixel_world_y, near};
+        return new Matrix(new float[][]{{pixel_world_x, pixel_world_y, near, (float) 0}}).transpose();
     }
 
     // Given a direction vector of a ray, return true if it collides with an object.
     // **CURRENTLY WRITTEN ASSUMING NO ELLIPSOIDS!!!**
-    public boolean ray_collides(Sphere s, float[] vec){
+    public boolean ray_collides(Sphere s, Matrix vec){
+        Matrix vec2 = s.matrix.invert4x4().multiply(vec); // Transform the ray into the coordinate system of the sphere.
+        float x = vec2.get(0,0);
+        float y = vec2.get(1,0);
+        float z = vec2.get(2,0);
+
         // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
-        double a = Math.pow(vec[0],2) + Math.pow(vec[1],2) + Math.pow(vec[2], 2);
-        double b = (s.pos[0] * vec[0] + s.pos[1] * vec[1] + s.pos[2] * vec[2]);
+        double a = Math.pow(x,2) + Math.pow(y,2) + Math.pow(z, 2);
+        double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
         double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
 
         double discriminant = Math.pow(b,2) - a*c;
@@ -112,7 +108,7 @@ class Camera {
             for (int ypixel = 0; ypixel < resolutionX; ypixel++){
                 int position = xpixel + ypixel*resolutionX;
 
-                float[] dir_vec = getDirectionVector(xpixel, ypixel);
+                Matrix dir_vec = getDirectionVector(xpixel, ypixel);
                 for (Sphere s: Raytracer.spheres){
                     if (ray_collides(s, dir_vec)){
                         pixels[position] = s.getColorInt();

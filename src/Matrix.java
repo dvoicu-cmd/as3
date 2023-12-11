@@ -1,6 +1,6 @@
-package src.MV;
+package src;
 
-class Matrix{
+public class Matrix{
 
     private float[][] mat;
     private int numRow;
@@ -25,7 +25,8 @@ class Matrix{
         }
     }
 
-    public float getValueAt(int row, int col){
+
+    public float get(int row, int col){
         return this.mat[row][col];
     }
 
@@ -59,7 +60,7 @@ class Matrix{
             Matrix output = new Matrix(this.getNumCol(), this.getNumRow());
             for(int i = 0; i < this.getNumRow(); i++){
                 for(int j = 0; j < this.getNumCol(); j++){
-                    float value = this.getValueAt(i,j) + other.getValueAt(i,j);
+                    float value = this.get(i,j) + other.get(i,j);
                     output.setValueAt(i,j,value);
                 }
             }
@@ -73,7 +74,7 @@ class Matrix{
             Matrix output = new Matrix(this.getNumCol(), this.getNumRow());
             for(int i = 0; i < this.getNumRow(); i++){
                 for(int j = 0; j < this.getNumCol(); j++){
-                    float value = this.getValueAt(i,j) - other.getValueAt(i,j);
+                    float value = this.get(i,j) - other.get(i,j);
                     output.setValueAt(i,j,value);
                 }
             }
@@ -95,7 +96,7 @@ class Matrix{
                 for (int j = 0; j < n; j++) {
                     float sum = 0;
                     for(int k = 0; k < p; k++){
-                        sum += this.getValueAt(i,k) * other.getValueAt(k,j);
+                        sum += this.get(i,k) * other.get(k,j);
                     }
                     output.setValueAt(i,j, sum);
                 }

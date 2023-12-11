@@ -13,6 +13,7 @@ class Sphere {
     float ks;
     float kr;
     int spec_exp;
+    Matrix matrix;
 
     public Sphere(String[] args){
         this.name = args[1];
@@ -24,8 +25,18 @@ class Sphere {
         this.ks = Float.parseFloat(args[13]);
         this.kr = Float.parseFloat(args[14]);
         this.spec_exp = Integer.parseInt(args[15]);
+
+        // MATRIX REPRESENTATION
+        float zero = 0;
+        float[][] mtx = new float[4][4];
+        mtx[0] = new float[] {scale[0], zero, zero, pos[0]};
+        mtx[1] = new float[] {zero, scale[1], zero, pos[1]};
+        mtx[2] = new float[] {zero, zero, scale[2], pos[2]};
+        mtx[3] = new float[] {zero, zero, zero, (float) 1};
+        this.matrix = new Matrix(mtx);
     }
 
+    // JUST FOR TESTING PURPOSES
     public Sphere(int[] c){
         this.color = c;
     }
