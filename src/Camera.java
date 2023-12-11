@@ -102,4 +102,5 @@ class Camera {
             throw new RuntimeException(e);
         }
     }
+
 }
