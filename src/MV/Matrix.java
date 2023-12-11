@@ -105,7 +105,20 @@ class Matrix{
         else return null;
     }
 
-    //Uhhhhhhhh.
+    public Matrix transpose(){
+        //Rows on mat --> Cols on transposed, Cols on mat --> Rows on transposed
+        float[][] transposed = new float[this.numCol][this.numRow];
+        for (int i = 0; i<this.numRow; i++){
+            for (int j = 0; j < this.numCol; j++){
+                transposed[j][i] = mat[i][j];
+            }
+        }
+        //Output reference to transposed operation as obj ref.
+        Matrix output = new Matrix(transposed);
+        return output;
+    }
+
+    //Ported from MV.js from previous assignments
     public Matrix invert4x4(){
         if(this.getNumCol() != 4 || this.getNumRow() != 4){
             return null;
