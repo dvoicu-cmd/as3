@@ -62,7 +62,7 @@ class Raytracer {
                 line_args = next();
             }
 
-            int[] back = color_to_255(Float.parseFloat(line_args[1]), Float.parseFloat(line_args[2]), Float.parseFloat(line_args[3]));
+            float[] back = new float[]{Float.parseFloat(line_args[1]), Float.parseFloat(line_args[2]), Float.parseFloat(line_args[3])};
             line_args = next();
             float[] ambient = new float[] {Float.parseFloat(line_args[1]), Float.parseFloat(line_args[2]), Float.parseFloat(line_args[3])};
             canvas = new Canvas(back, ambient);
@@ -90,8 +90,7 @@ class Raytracer {
         // 4) Perform ray tracing algorithm and store results into an array.
 
         // 5) output bit map file produced from array.
-        camera.apply_background_color();
-        camera.raytrace();
+        camera.raytrace(3);
         camera.exportImage();
 
     }
@@ -109,7 +108,12 @@ class Raytracer {
         return new int[]{Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)};
     }
 
-    static int rgb_array_to_int(int[] rgb){
+    static int[] color_to_255(float[] rgb){
+        return color_to_255(rgb[0], rgb[1], rgb[2]);
+    }
+
+    static int rgb_array_to_int(float[] color){
+        int[] rgb = color_to_255(color);
         int ret = 0;
         ret += rgb[0];
         ret = (ret <<8) + rgb[1];

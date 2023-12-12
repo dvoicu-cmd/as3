@@ -3,13 +3,13 @@ package src;
 // Might be good to build on these as we go.
 public class Tester {
     static void t_Sphere_getColorInt(){
-        Sphere s = new Sphere(new int[]{255,255,255});
+        Sphere s = new Sphere(new float[]{1,1,1});
         boolean result = s.getColorInt() == 0xFFFFFFFF;
         System.out.println("t_Sphere_getColorInt " + result);
     }
 
     static void t2_Sphere_getColorInt(){
-        Sphere s = new Sphere(new int[]{18,75,150});
+        Sphere s = new Sphere(new float[]{18,75,150});
         boolean result = s.getColorInt() == 0xFF124b96;
         System.out.println("t2_Sphere_getColorInt " + result);
     }

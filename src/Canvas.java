@@ -4,10 +4,10 @@ package src;
  * Class for canvas
  */
 class Canvas {
-    private final int[] background;
-    private final float[] ambient;
+    public final float[] background;
+    public final float[] ambient;
 
-    public Canvas(int[] background, float[] ambient) {
+    public Canvas(float[] background, float[] ambient) {
         this.background = background;
         this.ambient = ambient;
     }

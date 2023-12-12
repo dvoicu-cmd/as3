@@ -2,9 +2,9 @@ package src;
 
 public class Matrix{
 
-    private float[][] mat;
-    private int numRow;
-    private int numCol;
+    private final float[][] mat;
+    private final int numRow;
+    private final int numCol;
 
     public Matrix(int numRow, int numCol){
         this.mat = new float[numRow][numCol];
@@ -19,9 +19,7 @@ public class Matrix{
         this.mat = new float[numRow][numCol];
 
         for(int i = 0; i<this.numRow; i++){
-            for(int j = 0; j<this.numCol; j++){
-                this.mat[i][j] = array[i][j];
-            }
+            System.arraycopy(array[i], 0, this.mat[i], 0, this.numCol);
         }
     }
 
@@ -32,12 +30,8 @@ public class Matrix{
 
     // Access indexes starting from 0
     public void setValueAt(int row, int col, float value){
-        if(row >= this.getNumRow() || col >= this.getNumCol()){
-            return; //Don't do anything, as provided values are out of bounds.
-        }
-        else {
-            this.mat[row][col] = value;
-        }
+        assert row >= this.getNumRow() && col >= this.getNumCol();
+        this.mat[row][col] = value;
     }
 
     public int getNumRow(){
@@ -49,10 +43,7 @@ public class Matrix{
     }
 
     public boolean isEqualSize(Matrix other){
-        if(other.getNumCol() != this.getNumCol() || other.getNumRow() != this.getNumCol() ){
-            return false;
-        }
-        else return true;
+        return other.getNumCol() == this.getNumCol() && other.getNumRow() == this.getNumCol();
     }
 
     public Matrix add(Matrix other){
@@ -115,9 +106,24 @@ public class Matrix{
             }
         }
         //Output reference to transposed operation as obj ref.
-        Matrix output = new Matrix(transposed);
-        return output;
+        return new Matrix(transposed);
     }
+
+    // Inverses the transforms of a given sphere
+    public Matrix simpleInverse(Sphere s){
+        Matrix ret = new Matrix(this.mat);
+
+        ret.setValueAt(0,0, 1/s.scale[0]);
+        ret.setValueAt(1,1, 1/s.scale[1]);
+        ret.setValueAt(2,2, 1/s.scale[2]);
+
+        ret.setValueAt(0,3, -1 * s.pos[0]/s.scale[0]);
+        ret.setValueAt(1,3, -1 * s.pos[1]/s.scale[1]);
+        ret.setValueAt(2,3, -1 * s.pos[2]/s.scale[2]);
+
+        return ret;
+    }
+
 
     //Ported from MV.js from previous assignments
     public Matrix invert4x4(){
@@ -178,11 +184,9 @@ public class Matrix{
             }
 
             //Now load into matrix object and export address to obj.
-            Matrix inverseOutput = new Matrix(Inverse);
-            return inverseOutput;
+            return new Matrix(Inverse);
         }
     }
-
 
     public void print(){
         for(float[] row: this.mat){
