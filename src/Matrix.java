@@ -176,7 +176,7 @@ public class Matrix{
 
             float determinant = m[0][0] * Inverse[0][0] + m[0][1] * Inverse[0][1] + m[0][2] * Inverse[0][2] + m[0][3] * Inverse[0][3];
 
-            float iDeterminant = (float) (1.0/determinant); //Hopefully the casting does not mess up the solution
+            float iDeterminant = (1.0F/determinant); //Hopefully the casting does not mess up the solution
             for(int i = 0; i<4; i++){
                 for(int j = 0; j<4; j++){
                     Inverse[i][j] = Inverse[i][j]*iDeterminant;
@@ -187,6 +187,53 @@ public class Matrix{
             return new Matrix(Inverse);
         }
     }
+
+    public Matrix translate(float x, float y, float z) {
+        if(this.getNumRow() != 4 || this.getNumCol() != 4){
+            return null;
+        }
+        else{
+            Matrix result = new Matrix(this.mat);
+            result.setValueAt(0,3, x);
+            result.setValueAt(1,3, y);
+            result.setValueAt(2,3, z);
+            return result;
+        }
+    }
+
+    public Matrix scale(float x, float y, float z) {
+        if(this.getNumRow() != 4 || this.getNumCol() != 4){
+            return null;
+        }
+        else{
+            Matrix result = new Matrix(this.mat);
+            result.setValueAt(0,0, x);
+            result.setValueAt(1,1, y);
+            result.setValueAt(2,2, z);
+            return result;
+        }
+    }
+
+    public Matrix ortho(float left, float right, float bottom, float top, float near, float far){
+        if (left == right) return null;
+        if (bottom == top) return null;
+        if (near == far) return null;
+
+        float w = right - left;
+        float h = top - bottom;
+        float d = far - near;
+
+        Matrix result = new Matrix(4,4);
+        result.setValueAt(0,0, (2.0F/w));
+        result.setValueAt(1,1, (2.0F/h));
+        result.setValueAt(2,2, (-2.0F/d));
+        result.setValueAt(0,3, -(left+right)/w);
+        result.setValueAt(1,3, -(top+bottom)/h);
+        result.setValueAt(2,3, -(near+far)/d);
+
+        return result;
+    }
+
 
     public void print(){
         for(float[] row: this.mat){
