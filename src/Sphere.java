@@ -28,13 +28,10 @@ public class Sphere {
         this.spec_exp = Integer.parseInt(args[15]);
 
         // MATRIX REPRESENTATION
-        float zero = 0;
         float[][] mtx = new float[4][4];
-        mtx[0] = new float[] {scale[0], zero, zero, pos[0]};
-        mtx[1] = new float[] {zero, scale[1], zero, pos[1]};
-        mtx[2] = new float[] {zero, zero, scale[2], pos[2]};
-        mtx[3] = new float[] {zero, zero, zero, (float) 1};
-        this.matrix = new Matrix(mtx);
+        this.matrix = new Matrix(4,4, Template.IDENTITY);
+        this.matrix = this.matrix.scale(scale[0], scale[1], scale[2]);
+        this.matrix = this.matrix.translate(pos[0], pos[1], pos[2]);
     }
 
     // JUST FOR TESTING PURPOSES

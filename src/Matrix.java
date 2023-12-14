@@ -12,6 +12,8 @@ public class Matrix{
         this.numCol = numCol;
     }
 
+
+
     //Deep copy constructor
     public Matrix(float[][] array){
         this.numRow = array.length;
@@ -23,6 +25,28 @@ public class Matrix{
         }
     }
 
+    public Matrix(int numRow, int numCol, Template t){
+        this.mat = new float[numRow][numCol];
+        this.numRow = numRow;
+        this.numCol = numCol;
+
+
+        for (int i = 0; i < numRow; i++){
+            for (int j = 0; j < numCol; j++){
+                if (t == Template.ZERO || t== Template.HOMOGENOUS){
+                    mat[i][j] = 0;
+                }
+                else if (t == Template.IDENTITY && i==j){
+                    mat[i][j] = 1;
+                }
+            }
+        }
+
+        if (t == Template.HOMOGENOUS){
+            mat[numRow-1][numCol-1] = 1;
+        }
+    }
+
 
     public float get(int row, int col){
         return this.mat[row][col];
@@ -30,7 +54,7 @@ public class Matrix{
 
     // Access indexes starting from 0
     public void setValueAt(int row, int col, float value){
-        assert row >= this.getNumRow() && col >= this.getNumCol();
+        assert row < this.getNumRow() && col < this.getNumCol();
         this.mat[row][col] = value;
     }
 
@@ -38,6 +62,23 @@ public class Matrix{
         return this.numRow;
     }
 
+    public float[] asArray(){
+        assert this.getNumRow() == 1;
+        float[][] mtx = this.mat;
+
+        return new float[]{mtx[0][0], mtx[0][1], mtx[0][2]};
+
+    }
+
+    static float dot(float[] a, float[] b){
+        assert a.length == b.length;
+
+        float sum=0;
+        for (int i =0; i < a.length-1; i++){
+            sum += a[i] * b[i];
+        }
+        return sum;
+    }
     public int getNumCol(){
         return this.numCol;
     }
@@ -74,27 +115,33 @@ public class Matrix{
         else return null;
     }
 
+    public Matrix multiply(float scalar){
+        Matrix ret = new Matrix(this.mat);
+        for (int i = 0; i < this.getNumRow(); i++){
+            for (int j = 0; j < this.getNumCol(); j++){
+                ret.setValueAt(i,j, ret.get(i,j) * scalar);
+            }
+        }
+        return ret;
+    }
     public Matrix multiply(Matrix other){
+        assert this.getNumCol() == other.getNumRow();
         int m = this.getNumRow();
         int n = other.getNumCol();
         int p = other.getNumRow();
 
-
-        if(this.getNumCol() == other.getNumRow()){ //Only multiply if col = row
-            Matrix output = new Matrix(m,n);
-
-            for (int i = 0; i < m; i++){
-                for (int j = 0; j < n; j++) {
-                    float sum = 0;
-                    for(int k = 0; k < p; k++){
-                        sum += this.get(i,k) * other.get(k,j);
-                    }
-                    output.setValueAt(i,j, sum);
+        Matrix output = new Matrix(m,n);
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++) {
+                float sum = 0;
+                for(int k = 0; k < p; k++){
+                    sum += this.get(i,k) * other.get(k,j);
                 }
+                output.setValueAt(i,j, sum);
             }
-            return output;
         }
-        else return null;
+        return output;
+
     }
 
     public Matrix transpose(){
@@ -117,9 +164,13 @@ public class Matrix{
         ret.setValueAt(1,1, 1/s.scale[1]);
         ret.setValueAt(2,2, 1/s.scale[2]);
 
-        ret.setValueAt(0,3, -1 * s.pos[0]/s.scale[0]);
-        ret.setValueAt(1,3, -1 * s.pos[1]/s.scale[1]);
-        ret.setValueAt(2,3, -1 * s.pos[2]/s.scale[2]);
+       //ret.setValueAt(0,3, -1 * s.pos[0]/s.scale[0]);
+       //ret.setValueAt(1,3, -1 * s.pos[1]/s.scale[1]);
+       //ret.setValueAt(2,3, -1 * s.pos[2]/s.scale[2]);
+
+        ret.setValueAt(0,3, -1 * s.pos[0]);
+        ret.setValueAt(1,3, -1 * s.pos[1]);
+        ret.setValueAt(2,3, -1 * s.pos[2]);
 
         return ret;
     }
@@ -189,29 +240,22 @@ public class Matrix{
     }
 
     public Matrix translate(float x, float y, float z) {
-        if(this.getNumRow() != 4 || this.getNumCol() != 4){
-            return null;
-        }
-        else{
-            Matrix result = new Matrix(this.mat);
-            result.setValueAt(0,3, x);
-            result.setValueAt(1,3, y);
-            result.setValueAt(2,3, z);
-            return result;
-        }
+        assert this.getNumRow() == 4 && this.getNumCol() == 4;
+
+        Matrix transl_mtx = new Matrix(4,4,Template.IDENTITY);
+        transl_mtx.setValueAt(0,3, x);
+        transl_mtx.setValueAt(1,3, y);
+        transl_mtx.setValueAt(2,3, z);
+        return this.multiply(transl_mtx);
     }
 
     public Matrix scale(float x, float y, float z) {
-        if(this.getNumRow() != 4 || this.getNumCol() != 4){
-            return null;
-        }
-        else{
-            Matrix result = new Matrix(this.mat);
-            result.setValueAt(0,0, x);
-            result.setValueAt(1,1, y);
-            result.setValueAt(2,2, z);
-            return result;
-        }
+        assert this.getNumRow() == 4 && this.getNumCol() == 4;
+            Matrix scaling_mtx = new Matrix(4,4, Template.IDENTITY);
+            scaling_mtx.setValueAt(0,0, x);
+            scaling_mtx.setValueAt(1,1, y);
+            scaling_mtx.setValueAt(2,2, z);
+            return this.multiply(scaling_mtx);
     }
 
     public Matrix ortho(float left, float right, float bottom, float top, float near, float far){

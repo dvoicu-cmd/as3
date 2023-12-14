@@ -4,6 +4,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import static src.Raytracer.rgb_array_to_int;
 
@@ -45,10 +46,31 @@ class Camera {
     }
 
     // Given a pixel coordinate, get a direction vector pointing to it (DOES IT NEED TO BE NORMALIZED?)
-    public Matrix getDirectionVector(int x, int y){
+    public Matrix getRayVector(int x, int y){
         float pixel_world_x = left + ((right-left)/resolutionX) * x;
         float pixel_world_y = top + ((bottom-top)/resolutionY) * y;
-        return new Matrix(new float[][]{{pixel_world_x, pixel_world_y, near, (float) 0}}).transpose(); // ie column vector
+        float[] normalized = normalize(new float[]{pixel_world_x, pixel_world_y, near, 0}, 0);
+        return new Matrix(new float[][]{normalized}).transpose(); // ie column vector
+    }
+
+    public float[] get_dir_vec(float[] a, float[] b){
+        assert a.length == 3;
+        assert b.length == 3;
+        return new float[]{
+                b[0] - a[0],
+                b[1] - a[1],
+                b[2] - a[2]};
+    }
+
+    public float[] normalize(float[] vec, Integer w){
+        float mag = (float) Math.sqrt(Math.pow(vec[0], 2) + Math.pow(vec[1], 2) + Math.pow(vec[2], 2));
+        if (mag == 0) return new float[]{0,0,0,0};
+
+        if (w == null){
+            return new float[]{vec[0]/mag, vec[1]/mag, vec[2]/mag};
+        }
+
+        return new float[]{vec[0]/mag, vec[1]/mag, vec[2]/mag, w};
     }
 
     // Given a direction vector of a ray, return true if it collides with an object.
@@ -66,7 +88,7 @@ class Camera {
      * @param ray   ray in question
      * @return      double representation of t.
      */
-    public double getT(Sphere s, Matrix ray){
+    public float getT(Sphere s, Matrix ray){
         Matrix ray2 = s.matrix.simpleInverse(s).multiply(ray);
         float x = ray2.get(0,0);
         float y = ray2.get(1,0);
@@ -77,10 +99,12 @@ class Camera {
         double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
         double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
 
-        double plus = (-1 * b/a + Math.pow(b,2) - a*c)/a;
-        double minus = (-1 * b/a - Math.pow(b,2) - a*c)/a;
+        double discriminant = Math.sqrt(Math.pow(b, 2) - a * c);
+        double root1 = (-1* b/a + discriminant /a);
+        double root2 = (-1* b/a - discriminant /a);
 
-        return Math.min(plus, minus);
+        return -1 * (float)  Math.max(root1, root2);
+        //return (float)  Math.min(root1, root2); // This was the expected one but empirically did not work
     }
 
     /**
@@ -113,7 +137,7 @@ class Camera {
         for (int xpixel = 0; xpixel < resolutionX; xpixel++){
             for (int ypixel = 0; ypixel < resolutionX; ypixel++){
                 int position = xpixel + ypixel*resolutionX;
-                pixels[position] = rgb_array_to_int(calculate_colour(xpixel, ypixel, 3));
+                pixels[position] = rgb_array_to_int(calculate_colour(xpixel, ypixel, 3, false));
 
 
             }
@@ -125,37 +149,75 @@ class Camera {
      * @param xpixel the x pixel to be coloured
      * @param ypixel the y pixel to be coloured
      * @param n number of bounces
+     * @param is_reflected Used to distinguish between rays that hit the background directly from the camera, and those that hit the background after a reflection. Initially should be False
      * @return a float array of size 3 on the range [0-1] indicating the intensity of red, green, and blue.
      */
-    public float[] calculate_colour(int xpixel, int ypixel, int n){
+    public float[] calculate_colour(int xpixel, int ypixel, int n, boolean is_reflected){
         if (n == 0) return new float[]{0,0,0}; // base case. Limits bounces.
 
-        Matrix dir_vec = getDirectionVector(xpixel, ypixel);
+        Matrix ray = getRayVector(xpixel, ypixel);
         for (Sphere s: Raytracer.spheres){
-            if (ray_collides(s, dir_vec)){
-                float[] ambient = new float[3];
-                float[] diffuse = new float[3];
-                float[] specular = new float[3];
-                float[] reflected = new float[3];
+            if (ray_collides(s, ray)){
+                Matrix collision_point = ray.multiply(getT(s, ray));
 
-                for (int i = 0; i < 3; i++){
-                    ambient[i] = s.ka * Raytracer.canvas.ambient[0] * s.color[i];
-                    diffuse[i] = 0;  // TODO
-                    specular[i] = 0; // TODO
-                    reflected[i] = 0; // TODO
-                }
+                float[] ambient = get_ambient(s);
+                float[] diffuse = get_diffuse(collision_point, s);
+                float[] specular = get_specular();
+                //float[] reflected = calculate_colour(xpixel, ypixel, n-1, true); //recursive call
+                float[] reflected = new float[]{0,0,0};
 
                 float[] intensity = new float[3];
-                float[] bounce = calculate_colour(xpixel, ypixel, n-1);
                 for (int i = 0; i < 3; i++){
-                    intensity[i] = Math.min(1, ambient[i] + diffuse[i] + specular[i] + reflected[i] + bounce[i]);
+                    intensity[i] = Math.min(1, ambient[i] + diffuse[i] + specular[i] + reflected[i]);
                 }
 
                 return intensity;
 
             }
         }
+
+        // No collision with any sphere.
+        if(is_reflected) {
+            return new float[]{0,0,0};
+        }
         return Raytracer.canvas.background;
+    }
+
+    public float[] get_ambient(Sphere s){
+        float[] ambient = new float[3];
+        for (int i = 0; i < 3; i++){
+            ambient[i] = s.ka * Raytracer.canvas.ambient[0] * s.color[i];
+
+        }
+        return ambient;
+    }
+
+    public float[] get_diffuse(Matrix p, Sphere s){
+        // TODO: Shadow rays ;-;
+        float[] intensity = new float[]{0,0,0};
+        for (Light l : Raytracer.lights){
+            // CALCULATE NORMAL
+            float nx = p.get(0,0) / s.scale[0];
+            float ny = p.get(1,0) / s.scale[1];
+            float nz = p.get(2,0) / s.scale[2];
+            float[] N = normalize(new float[]{nx, ny, nz}, null);
+
+            // CALCULATE L (point-> light) vector
+            float[] L = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
+            //float dot = Math.max(0, Matrix.dot(N, L));
+            float dot = Matrix.dot(N, L);
+
+            for (int i =0; i < 3; i++){
+                intensity[i] += s.kd * l.intensity[i] * dot * s.color[i];
+            }
+
+        }
+
+        return intensity;
+    }
+
+    public float[] get_specular(){
+        return new float[]{0,0,0};
     }
 
     public void exportImage() {

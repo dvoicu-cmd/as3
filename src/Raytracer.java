@@ -9,6 +9,7 @@ import java.util.ArrayList;
  */
 class Raytracer {
     static ArrayList<Sphere> spheres = new ArrayList<>();
+    static ArrayList<Light> lights = new ArrayList<>();
     static Camera camera;
     static BufferedReader reader;
     static Canvas canvas;
@@ -58,7 +59,7 @@ class Raytracer {
             }
 
             while(line_args[0].compareTo("LIGHT") == 0){
-                // TODO: Call light constructor
+                lights.add(new Light(line_args));
                 line_args = next();
             }
 
