@@ -49,8 +49,8 @@ class Camera {
     public Matrix getRayVector(int x, int y){
         float pixel_world_x = left + ((right-left)/resolutionX) * x;
         float pixel_world_y = top + ((bottom-top)/resolutionY) * y;
-        float[] normalized = normalize(new float[]{pixel_world_x, pixel_world_y, near, 0}, 0);
-        return new Matrix(new float[][]{normalized}).transpose(); // ie column vector
+        //float[] normalized = normalize(new float[]{pixel_world_x, pixel_world_y, near, 0}, 0);
+        return new Matrix(new float[][]{new float[]{pixel_world_x, pixel_world_y, near, 0}}).transpose(); // ie column vector
     }
 
     public float[] get_dir_vec(float[] a, float[] b){
@@ -75,7 +75,9 @@ class Camera {
 
     // Given a direction vector of a ray, return true if it collides with an object.
     public boolean ray_collides(Sphere s, Matrix ray){
-        return getDiscriminant(s, ray) >= 0;
+        //return getDiscriminant(s, ray) >= 0;
+        return getT(s, ray) != null;
+        //return true;
     }
 
     public boolean ray_collides(double discriminant){
@@ -88,23 +90,57 @@ class Camera {
      * @param ray   ray in question
      * @return      double representation of t.
      */
-    public float getT(Sphere s, Matrix ray){
+    public Matrix getT(Sphere s, Matrix ray){
         Matrix ray2 = s.matrix.simpleInverse(s).multiply(ray);
+
+        Matrix origin2 = s.matrix.simpleInverse(s).multiply(new Matrix(new float[][]{ new float[]{0,0,0,1}}).transpose());
+
+
+        Matrix pos = s.matrix.simpleInverse(s).multiply(new Matrix (new float[][]{{s.pos[0],s.pos[1],s.pos[2],0}}).transpose());
         float x = ray2.get(0,0);
         float y = ray2.get(1,0);
         float z = ray2.get(2,0);
 
+        float ox = origin2.get(0,0);
+        float oy = origin2.get(1,0);
+        float oz = origin2.get(2,0);
+
+        float a = x*x + y*y + z*z;
+        float b = 2*(x*ox + y*oy + z*oz);
+        float c = ox*ox + oy*oy + oz*oz -1;
+        /*
+       OLD
+
         // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
         double a = Math.pow(x,2) + Math.pow(y,2) + Math.pow(z, 2);
-        double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
+        //double b = 0;
+        //double c = -1;
+        double b = 2 * (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
         double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
+        */
 
-        double discriminant = Math.sqrt(Math.pow(b, 2) - a * c);
-        double root1 = (-1* b/a + discriminant /a);
-        double root2 = (-1* b/a - discriminant /a);
+        double discriminant = Math.sqrt(Math.pow(b, 2) - 4* a * c);
+        double root1 = (-1* b/(2*a) + discriminant /(2*a));
+        double root2 = (-1* b/(2*a) - discriminant /(2*a));
+        if (Double.isNaN(discriminant)) return null;
 
-        return -1 * (float)  Math.max(root1, root2);
-        //return (float)  Math.min(root1, root2); // This was the expected one but empirically did not work
+        // Select the smallest value, unless it is negative. Answer may be negative if both are negative. In this case, no solution.
+        if (Math.max(root1, root2) < 0){
+            return null;
+        }
+
+        float t;
+        if (root1 > 0 && root2 > 0){
+            t = (float) Math.min(root1, root2);
+        }
+        else {
+            t = (float) Math.max(root1, root2);
+        }
+
+        Matrix ret = ray2.multiply(t).add(origin2);
+        return ret;
+
+
     }
 
     /**
@@ -123,8 +159,10 @@ class Camera {
 
         // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
         double a = Math.pow(x,2) + Math.pow(y,2) + Math.pow(z, 2);
-        double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
-        double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
+        //double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
+        double b = 0;
+        double c = -1;
+        //double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
 
         return Math.pow(b,2) - a*c;
     }
@@ -136,6 +174,9 @@ class Camera {
     public void raytrace(int n){
         for (int xpixel = 0; xpixel < resolutionX; xpixel++){
             for (int ypixel = 0; ypixel < resolutionX; ypixel++){
+                if (xpixel == 300 & ypixel == 300){
+                    System.out.println("REMOVE ME");
+                }
                 int position = xpixel + ypixel*resolutionX;
                 pixels[position] = rgb_array_to_int(calculate_colour(xpixel, ypixel, 3, false));
 
@@ -156,13 +197,19 @@ class Camera {
         if (n == 0) return new float[]{0,0,0}; // base case. Limits bounces.
 
         Matrix ray = getRayVector(xpixel, ypixel);
+        Matrix ray_norm = new Matrix(new float[][]{normalize(ray.transpose().asArray(), 0)}).transpose();
+
+
         for (Sphere s: Raytracer.spheres){
             if (ray_collides(s, ray)){
-                Matrix collision_point = ray.multiply(getT(s, ray));
+
+                Matrix collision_point = getT(s, ray);
+                //Matrix global_collision = s.matrix.simpleInverse(s).transpose().multiply(collision_point);
+                Matrix global_collision = s.matrix.multiply(collision_point);
 
                 float[] ambient = get_ambient(s);
-                float[] diffuse = get_diffuse(collision_point, s);
-                float[] specular = get_specular();
+                float[] diffuse = get_diffuse(global_collision, s);
+                float[] specular = get_specular(global_collision, s);
                 //float[] reflected = calculate_colour(xpixel, ypixel, n-1, true); //recursive call
                 float[] reflected = new float[]{0,0,0};
 
@@ -172,7 +219,6 @@ class Camera {
                 }
 
                 return intensity;
-
             }
         }
 
@@ -196,16 +242,13 @@ class Camera {
         // TODO: Shadow rays ;-;
         float[] intensity = new float[]{0,0,0};
         for (Light l : Raytracer.lights){
-            // CALCULATE NORMAL
-            float nx = p.get(0,0) / s.scale[0];
-            float ny = p.get(1,0) / s.scale[1];
-            float nz = p.get(2,0) / s.scale[2];
-            float[] N = normalize(new float[]{nx, ny, nz}, null);
+            float[] N = get_normal(p, s);
 
             // CALCULATE L (point-> light) vector
             float[] L = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
-            //float dot = Math.max(0, Matrix.dot(N, L));
-            float dot = Matrix.dot(N, L);
+            float dot = Math.max(0, Matrix.dot(N, L));
+            //float dot = Matrix.dot(N, L);
+            //float dot = 1; // TODO remove this
 
             for (int i =0; i < 3; i++){
                 intensity[i] += s.kd * l.intensity[i] * dot * s.color[i];
@@ -216,8 +259,35 @@ class Camera {
         return intensity;
     }
 
-    public float[] get_specular(){
-        return new float[]{0,0,0};
+    public float[] get_normal(Matrix p, Sphere s){
+        //float nx = p.get(0,0) / s.scale[0];
+        //float ny = p.get(1,0) / s.scale[1];
+        //float nz = p.get(2,0) / s.scale[2];
+
+        float nx = p.get(0,0) - s.pos[0];
+        float ny = p.get(1,0) - s.pos[1];
+        float nz = p.get(2,0) - s.pos[2];
+        return normalize(new float[]{nx, ny, nz}, null);
+    }
+
+    public float[] get_specular(Matrix p, Sphere s){
+        float[] intensity = new float[]{0,0,0};
+        Matrix N = new Matrix(new float[][]{get_normal(p,s)});
+
+        for (Light l : Raytracer.lights) {
+            float[] L_vec = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
+            Matrix L = new Matrix(new float[][]{L_vec});
+
+            float scalar = (float) 2.0 * Matrix.dot(N.asArray(), L.asArray());
+            float[] r = normalize(N.multiply(scalar).subtract(L).asArray(), 0);
+            float[] v = normalize(get_dir_vec(p.transpose().asArray(), new float[]{0,0,0}), 0);
+
+            for (int i =0; i<3; i++){
+                intensity[i] = (float) (s.ks * l.intensity[i] * Math.pow(Matrix.dot(r,v), s.spec_exp));
+            }
+        }
+
+        return intensity;
     }
 
     public void exportImage() {

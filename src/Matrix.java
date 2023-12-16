@@ -2,7 +2,7 @@ package src;
 
 public class Matrix{
 
-    private final float[][] mat;
+    public final float[][] mat;
     private final int numRow;
     private final int numCol;
 
@@ -74,7 +74,7 @@ public class Matrix{
         assert a.length == b.length;
 
         float sum=0;
-        for (int i =0; i < a.length-1; i++){
+        for (int i =0; i < a.length; i++){
             sum += a[i] * b[i];
         }
         return sum;
@@ -88,8 +88,8 @@ public class Matrix{
     }
 
     public Matrix add(Matrix other){
-        if(this.isEqualSize(other)){
-            Matrix output = new Matrix(this.getNumCol(), this.getNumRow());
+        //assert this.isEqualSize(other);
+            Matrix output = new Matrix(this.getNumRow(), this.getNumCol());
             for(int i = 0; i < this.getNumRow(); i++){
                 for(int j = 0; j < this.getNumCol(); j++){
                     float value = this.get(i,j) + other.get(i,j);
@@ -97,22 +97,17 @@ public class Matrix{
                 }
             }
             return output;
-        }
-        else return null;
     }
 
     public Matrix subtract(Matrix other){
-        if(this.isEqualSize(other)){
-            Matrix output = new Matrix(this.getNumCol(), this.getNumRow());
-            for(int i = 0; i < this.getNumRow(); i++){
-                for(int j = 0; j < this.getNumCol(); j++){
-                    float value = this.get(i,j) - other.get(i,j);
-                    output.setValueAt(i,j,value);
-                }
+        Matrix output = new Matrix(this.getNumRow(), this.getNumCol());
+        for(int i = 0; i < this.getNumRow(); i++){
+            for(int j = 0; j < this.getNumCol(); j++){
+                float value = this.get(i,j) - other.get(i,j);
+                output.setValueAt(i,j,value);
             }
-            return output;
         }
-        else return null;
+        return output;
     }
 
     public Matrix multiply(float scalar){
@@ -125,7 +120,7 @@ public class Matrix{
         return ret;
     }
     public Matrix multiply(Matrix other){
-        assert this.getNumCol() == other.getNumRow();
+        //assert this.getNumCol() == other.getNumRow();
         int m = this.getNumRow();
         int n = other.getNumCol();
         int p = other.getNumRow();
