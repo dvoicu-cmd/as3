@@ -174,7 +174,7 @@ class Camera {
     public void raytrace(int n){
         for (int xpixel = 0; xpixel < resolutionX; xpixel++){
             for (int ypixel = 0; ypixel < resolutionY; ypixel++){
-                if (xpixel == 443 & ypixel == 182){
+                if (xpixel == 401 & ypixel == 214){
                     System.out.println("REMOVE ME");
                 }
                 int position = xpixel + ypixel*resolutionX;
@@ -266,8 +266,8 @@ class Camera {
         //float nz = p.get(2,0) / s.scale[2];
 
         float nx = (p.get(0,0) - s.pos[0]) / s.scale[0] / s.scale[0];
-        float ny = (p.get(1,0) - s.pos[1]) / s.scale[1] / s.scale[0];
-        float nz = (p.get(2,0) - s.pos[2]) / s.scale[2] / s.scale[0];
+        float ny = (p.get(1,0) - s.pos[1]) / s.scale[1] / s.scale[1];
+        float nz = (p.get(2,0) - s.pos[2]) / s.scale[2] / s.scale[2];
         return normalize(new float[]{nx, ny, nz}, null);
     }
 

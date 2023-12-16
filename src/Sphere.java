@@ -30,8 +30,8 @@ public class Sphere {
         // MATRIX REPRESENTATION
         float[][] mtx = new float[4][4];
         this.matrix = new Matrix(4,4, Template.IDENTITY);
-        this.matrix = this.matrix.scale(scale[0], scale[1], scale[2]);
         this.matrix = this.matrix.translate(pos[0], pos[1], pos[2]);
+        this.matrix = this.matrix.scale(scale[0], scale[1], scale[2]);
     }
 
     // JUST FOR TESTING PURPOSES
