@@ -14,20 +14,6 @@ class Raytracer {
     static BufferedReader reader;
     static Canvas canvas;
 
-    /** Number of command line arguments.
-    private int numArgs;
-
-    private Canvas canvas;
-
-    /** The camera object of the scene */
-    //private Camera camera;
-
-    /** List of spheres in the scene */
-    //private ArrayList<Sphere> spheres;
-
-    /** List of light sources in the scene */
-    //private ArrayList<Light> lights;
-
     /** Main Method */
     public static void main(String[] args){
         // 1) Read cli args.

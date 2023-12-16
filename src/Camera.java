@@ -4,7 +4,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
 import static src.Raytracer.rgb_array_to_int;
 
@@ -45,7 +44,7 @@ class Camera {
         this.pixels = new int[resolutionX * resolutionY];
     }
 
-    // Given a pixel coordinate, get a direction vector pointing to it (DOES IT NEED TO BE NORMALIZED?)
+    // Given a pixel coordinate, get a direction vector pointing to it
     public Matrix getRayVector(int x, int y){
         float pixel_world_x = left + ((right-left)/resolutionX) * x;
         float pixel_world_y = top + ((bottom-top)/resolutionY) * y;
@@ -53,6 +52,12 @@ class Camera {
         return new Matrix(new float[][]{new float[]{pixel_world_x, pixel_world_y, near, 0}}).transpose(); // ie column vector
     }
 
+    /**
+     * Gets the direction vector between two points a->b
+     * @param a starting point
+     * @param b ending point
+     * @return vector
+     */
     public float[] get_dir_vec(float[] a, float[] b){
         assert a.length == 3;
         assert b.length == 3;
@@ -62,6 +67,12 @@ class Camera {
                 b[2] - a[2]};
     }
 
+    /**
+     * Normalize a vector, scaling its magnitude to 1
+     * @param vec vector to be normalized
+     * @param w homogenized coordinate parameter. 0,1 or null to not append any values.
+     * @return normalized vector
+     */
     public float[] normalize(float[] vec, Integer w){
         float mag = (float) Math.sqrt(Math.pow(vec[0], 2) + Math.pow(vec[1], 2) + Math.pow(vec[2], 2));
         if (mag == 0) return new float[]{0,0,0,0};
@@ -74,14 +85,8 @@ class Camera {
     }
 
     // Given a direction vector of a ray, return true if it collides with an object.
-    public boolean ray_collides(Sphere s, Matrix ray){
-        //return getDiscriminant(s, ray) >= 0;
-        return getT(s, ray) != null;
-        //return true;
-    }
-
-    public boolean ray_collides(double discriminant){
-        return discriminant >= 0;
+    public boolean ray_collides(Sphere s, Matrix ray, Matrix origin){
+        return getT(s, ray, origin) != null;
     }
 
     /**
@@ -90,13 +95,10 @@ class Camera {
      * @param ray   ray in question
      * @return      double representation of t.
      */
-    public Matrix getT(Sphere s, Matrix ray){
-        Matrix ray2 = s.matrix.simpleInverse(s).multiply(ray);
+    public Matrix getT(Sphere s, Matrix ray, Matrix origin){
+        Matrix ray2 = s.matrix.simpleInverse(s).multiply(ray); // Transformed ray into sphere coordinate system
+        Matrix origin2 = s.matrix.simpleInverse(s).multiply(origin.transpose()); // origin in sphere coordinate system.
 
-        Matrix origin2 = s.matrix.simpleInverse(s).multiply(new Matrix(new float[][]{ new float[]{0,0,0,1}}).transpose());
-
-
-        Matrix pos = s.matrix.simpleInverse(s).multiply(new Matrix (new float[][]{{s.pos[0],s.pos[1],s.pos[2],0}}).transpose());
         float x = ray2.get(0,0);
         float y = ray2.get(1,0);
         float z = ray2.get(2,0);
@@ -105,26 +107,16 @@ class Camera {
         float oy = origin2.get(1,0);
         float oz = origin2.get(2,0);
 
+        // QUADRATIC FORMULA
         float a = x*x + y*y + z*z;
         float b = 2*(x*ox + y*oy + z*oz);
         float c = ox*ox + oy*oy + oz*oz -1;
-        /*
-       OLD
-
-        // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
-        double a = Math.pow(x,2) + Math.pow(y,2) + Math.pow(z, 2);
-        //double b = 0;
-        //double c = -1;
-        double b = 2 * (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
-        double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
-        */
 
         double discriminant = Math.sqrt(Math.pow(b, 2) - 4* a * c);
         double root1 = (-1* b/(2*a) + discriminant /(2*a));
         double root2 = (-1* b/(2*a) - discriminant /(2*a));
         if (Double.isNaN(discriminant)) return null;
 
-        // Select the smallest value, unless it is negative. Answer may be negative if both are negative. In this case, no solution.
         if (Math.max(root1, root2) < 0){
             return null;
         }
@@ -137,34 +129,7 @@ class Camera {
             t = (float) Math.max(root1, root2);
         }
 
-        Matrix ret = ray2.multiply(t).add(origin2);
-        return ret;
-
-
-    }
-
-    /**
-     * Return the discriminant of the quadratic formula for the collision of a ray and sphere
-     * This will indicate if a collision occurred, and if so, is part of future calculations.
-     * @param s     Sphere you are interested in. Should be called once for each sphere.
-     * @param ray   Ray in question.
-     * @return      Double value of discriminant.
-     */
-    public double getDiscriminant(Sphere s, Matrix ray){
-        Matrix temp_debug = s.matrix.simpleInverse(s);
-        Matrix ray2 = s.matrix.simpleInverse(s).multiply(ray);
-        float x = ray2.get(0,0);
-        float y = ray2.get(1,0);
-        float z = ray2.get(2,0);
-
-        // Derived from sphere(ray) where sphere is (X-dx)^2 + (Y-dy)^2 + (Z-dz)^2
-        double a = Math.pow(x,2) + Math.pow(y,2) + Math.pow(z, 2);
-        //double b = (s.pos[0] * x + s.pos[1] * y + s.pos[2] * z);
-        double b = 0;
-        double c = -1;
-        //double c = Math.pow(s.pos[0], 2) + Math.pow(s.pos[1], 2) + Math.pow(s.pos[2], 2) -1.0;
-
-        return Math.pow(b,2) - a*c;
+        return ray2.multiply(t).add(origin2);
     }
 
     /**
@@ -194,27 +159,24 @@ class Camera {
     public float[] calculate_colour(Matrix ray, int n, boolean is_reflected){
         if (n == 0) return new float[]{0,0,0}; // base case. Limits bounces.
 
-        //Matrix ray_norm = new Matrix(new float[][]{normalize(ray.transpose().asArray(), 0)}).transpose();
-
-
         for (Sphere s: Raytracer.spheres){
-            if (ray_collides(s, ray)){
-                Matrix collision_point = getT(s, ray);
-                //Matrix global_collision = s.matrix.simpleInverse(s).transpose().multiply(collision_point);
+            if (ray_collides(s, ray, new Matrix(new float[][]{new float[]{0,0,0,1}}))){
+                Matrix collision_point = getT(s, ray, new Matrix(new float[][]{ new float[]{0,0,0,1}}));
                 Matrix global_collision = s.matrix.multiply(collision_point);
                 Matrix N = new Matrix(new float[][]{get_normal(global_collision,s)});
 
+                // ADSR
                 float[] ambient = get_ambient(s);
                 float[] diffuse = get_diffuse(global_collision, s);
                 float[] specular = get_specular(global_collision, s, N);
 
-
+                // REFLECTION
                 float[] ray_bounced_arr = bounce(N, new Matrix(new float[][]{ray.transpose().asArray()}));
                 Matrix ray_bounced = new Matrix(new float[][]{ray_bounced_arr}).transpose();
                 float[] reflected =  calculate_colour(ray_bounced, n-1, true); //recursive call
 
-                //float[] reflected = new float[]{0,0,0};
 
+                // SUM ALL COMPONENTS
                 float[] intensity = new float[3];
                 for (int i = 0; i < 3; i++){
                     intensity[i] = Math.min(1, ambient[i] + diffuse[i] + specular[i] + s.kr * reflected[i]);
@@ -231,6 +193,11 @@ class Camera {
         return Raytracer.canvas.background;
     }
 
+    /**
+     * Gets ambient lighting for a given pixel, given the sphere it belongs to.
+     * @param s Sphere in question
+     * @return array describing ambient lighting values
+     */
     public float[] get_ambient(Sphere s){
         float[] ambient = new float[3];
         for (int i = 0; i < 3; i++){
@@ -240,13 +207,38 @@ class Camera {
         return ambient;
     }
 
+    /**
+     * Gets diffuse lighting for a given pixel, given the sphere it belongs to.
+     * @param p Point of collision in WCS
+     * @param s Sphere in question
+     * @return intensity of diffuse lighting as an array.
+     */
     public float[] get_diffuse(Matrix p, Sphere s){
         float[] intensity = new float[]{0,0,0};
+
+        outerLoop:
         for (Light l : Raytracer.lights){
+
+
             float[] N = get_normal(p, s);
 
             // CALCULATE L (point-> light) vector
             float[] L = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
+
+
+            /*
+            // CHECK FOR SHADOW RAYS --> Doesn't work 100%
+            Matrix L_mtx = new Matrix(new float[][]{L});
+            for (Sphere shadow_candidate: spheres){
+                if (shadow_candidate == s) continue;
+                if (ray_collides(shadow_candidate, L_mtx, p)){
+                    continue outerLoop;
+                }
+
+            }
+             */
+
+
             float dot = Math.max(0, Matrix.dot(N, L));
             //float dot = Matrix.dot(N, L);
             //float dot = 1; // TODO remove this
