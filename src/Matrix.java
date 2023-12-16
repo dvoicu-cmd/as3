@@ -163,9 +163,9 @@ public class Matrix{
        //ret.setValueAt(1,3, -1 * s.pos[1]/s.scale[1]);
        //ret.setValueAt(2,3, -1 * s.pos[2]/s.scale[2]);
 
-        ret.setValueAt(0,3, -1 * s.pos[0]);
-        ret.setValueAt(1,3, -1 * s.pos[1]);
-        ret.setValueAt(2,3, -1 * s.pos[2]);
+        ret.setValueAt(0,3, -1 * s.pos[0]/s.scale[0]);
+        ret.setValueAt(1,3, -1 * s.pos[1]/s.scale[1]);
+        ret.setValueAt(2,3, -1 * s.pos[2]/s.scale[2]);
 
         return ret;
     }

@@ -174,7 +174,7 @@ class Camera {
     public void raytrace(int n){
         for (int xpixel = 0; xpixel < resolutionX; xpixel++){
             for (int ypixel = 0; ypixel < resolutionY; ypixel++){
-                if (xpixel == 300 & ypixel == 300){
+                if (xpixel == 443 & ypixel == 182){
                     System.out.println("REMOVE ME");
                 }
                 int position = xpixel + ypixel*resolutionX;
@@ -211,13 +211,13 @@ class Camera {
 
                 float[] ray_bounced_arr = bounce(N, new Matrix(new float[][]{ray.transpose().asArray()}));
                 Matrix ray_bounced = new Matrix(new float[][]{ray_bounced_arr}).transpose();
-                float[] reflected = calculate_colour(ray_bounced, n-1, true); //recursive call
+                float[] reflected =  calculate_colour(ray_bounced, n-1, true); //recursive call
 
                 //float[] reflected = new float[]{0,0,0};
 
                 float[] intensity = new float[3];
                 for (int i = 0; i < 3; i++){
-                    intensity[i] = Math.min(1, ambient[i] + diffuse[i] + specular[i] + reflected[i]);
+                    intensity[i] = Math.min(1, ambient[i] + diffuse[i] + specular[i] + s.kr * reflected[i]);
                 }
 
                 return intensity;
@@ -234,7 +234,7 @@ class Camera {
     public float[] get_ambient(Sphere s){
         float[] ambient = new float[3];
         for (int i = 0; i < 3; i++){
-            ambient[i] = s.ka * Raytracer.canvas.ambient[0] * s.color[i];
+            ambient[i] = s.ka * Raytracer.canvas.ambient[i] * s.color[i];
 
         }
         return ambient;
@@ -265,25 +265,24 @@ class Camera {
         //float ny = p.get(1,0) / s.scale[1];
         //float nz = p.get(2,0) / s.scale[2];
 
-        float nx = (p.get(0,0) - s.pos[0]) / s.scale[0];
-        float ny = (p.get(1,0) - s.pos[1]) / s.scale[1];
-        float nz = (p.get(2,0) - s.pos[2]) / s.scale[2];
+        float nx = (p.get(0,0) - s.pos[0]) / s.scale[0] / s.scale[0];
+        float ny = (p.get(1,0) - s.pos[1]) / s.scale[1] / s.scale[0];
+        float nz = (p.get(2,0) - s.pos[2]) / s.scale[2] / s.scale[0];
         return normalize(new float[]{nx, ny, nz}, null);
     }
 
     public float[] get_specular(Matrix p, Sphere s, Matrix N){
         float[] intensity = new float[]{0,0,0};
 
-
         for (Light l : Raytracer.lights) {
             float[] L_vec = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
             Matrix L = new Matrix(new float[][]{L_vec});
 
-            float[] r = bounce(N, L);
+            float[] r = normalize(bounce(N, L), 0);
             float[] v = normalize(get_dir_vec(p.transpose().asArray(), new float[]{0,0,0}), 0);
 
             for (int i =0; i<3; i++){
-                intensity[i] = (float) (s.ks * l.intensity[i] * Math.pow(Matrix.dot(r,v), s.spec_exp));
+                intensity[i] += (float) (s.ks * l.intensity[i] * Math.pow(Math.max(0, Matrix.dot(r,v)), s.spec_exp));
             }
         }
 
