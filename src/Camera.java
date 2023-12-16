@@ -173,12 +173,12 @@ class Camera {
      */
     public void raytrace(int n){
         for (int xpixel = 0; xpixel < resolutionX; xpixel++){
-            for (int ypixel = 0; ypixel < resolutionX; ypixel++){
+            for (int ypixel = 0; ypixel < resolutionY; ypixel++){
                 if (xpixel == 300 & ypixel == 300){
                     System.out.println("REMOVE ME");
                 }
                 int position = xpixel + ypixel*resolutionX;
-                pixels[position] = rgb_array_to_int(calculate_colour(xpixel, ypixel, 3, false));
+                pixels[position] = rgb_array_to_int(calculate_colour(getRayVector(xpixel, ypixel), 3, false));
 
 
             }
@@ -187,31 +187,33 @@ class Camera {
 
     /**
      * The recursive part of the raytrace algorithm. Calculates ambient, diffuse, specular components, and the recursive reflected component
-     * @param xpixel the x pixel to be coloured
-     * @param ypixel the y pixel to be coloured
      * @param n number of bounces
      * @param is_reflected Used to distinguish between rays that hit the background directly from the camera, and those that hit the background after a reflection. Initially should be False
      * @return a float array of size 3 on the range [0-1] indicating the intensity of red, green, and blue.
      */
-    public float[] calculate_colour(int xpixel, int ypixel, int n, boolean is_reflected){
+    public float[] calculate_colour(Matrix ray, int n, boolean is_reflected){
         if (n == 0) return new float[]{0,0,0}; // base case. Limits bounces.
 
-        Matrix ray = getRayVector(xpixel, ypixel);
-        Matrix ray_norm = new Matrix(new float[][]{normalize(ray.transpose().asArray(), 0)}).transpose();
+        //Matrix ray_norm = new Matrix(new float[][]{normalize(ray.transpose().asArray(), 0)}).transpose();
 
 
         for (Sphere s: Raytracer.spheres){
             if (ray_collides(s, ray)){
-
                 Matrix collision_point = getT(s, ray);
                 //Matrix global_collision = s.matrix.simpleInverse(s).transpose().multiply(collision_point);
                 Matrix global_collision = s.matrix.multiply(collision_point);
+                Matrix N = new Matrix(new float[][]{get_normal(global_collision,s)});
 
                 float[] ambient = get_ambient(s);
                 float[] diffuse = get_diffuse(global_collision, s);
-                float[] specular = get_specular(global_collision, s);
-                //float[] reflected = calculate_colour(xpixel, ypixel, n-1, true); //recursive call
-                float[] reflected = new float[]{0,0,0};
+                float[] specular = get_specular(global_collision, s, N);
+
+
+                float[] ray_bounced_arr = bounce(N, new Matrix(new float[][]{ray.transpose().asArray()}));
+                Matrix ray_bounced = new Matrix(new float[][]{ray_bounced_arr}).transpose();
+                float[] reflected = calculate_colour(ray_bounced, n-1, true); //recursive call
+
+                //float[] reflected = new float[]{0,0,0};
 
                 float[] intensity = new float[3];
                 for (int i = 0; i < 3; i++){
@@ -239,7 +241,6 @@ class Camera {
     }
 
     public float[] get_diffuse(Matrix p, Sphere s){
-        // TODO: Shadow rays ;-;
         float[] intensity = new float[]{0,0,0};
         for (Light l : Raytracer.lights){
             float[] N = get_normal(p, s);
@@ -264,22 +265,21 @@ class Camera {
         //float ny = p.get(1,0) / s.scale[1];
         //float nz = p.get(2,0) / s.scale[2];
 
-        float nx = p.get(0,0) - s.pos[0];
-        float ny = p.get(1,0) - s.pos[1];
-        float nz = p.get(2,0) - s.pos[2];
+        float nx = (p.get(0,0) - s.pos[0]) / s.scale[0];
+        float ny = (p.get(1,0) - s.pos[1]) / s.scale[1];
+        float nz = (p.get(2,0) - s.pos[2]) / s.scale[2];
         return normalize(new float[]{nx, ny, nz}, null);
     }
 
-    public float[] get_specular(Matrix p, Sphere s){
+    public float[] get_specular(Matrix p, Sphere s, Matrix N){
         float[] intensity = new float[]{0,0,0};
-        Matrix N = new Matrix(new float[][]{get_normal(p,s)});
+
 
         for (Light l : Raytracer.lights) {
             float[] L_vec = normalize(get_dir_vec(p.transpose().asArray(), l.pos), null);
             Matrix L = new Matrix(new float[][]{L_vec});
 
-            float scalar = (float) 2.0 * Matrix.dot(N.asArray(), L.asArray());
-            float[] r = normalize(N.multiply(scalar).subtract(L).asArray(), 0);
+            float[] r = bounce(N, L);
             float[] v = normalize(get_dir_vec(p.transpose().asArray(), new float[]{0,0,0}), 0);
 
             for (int i =0; i<3; i++){
@@ -288,6 +288,11 @@ class Camera {
         }
 
         return intensity;
+    }
+
+    public float[] bounce(Matrix N, Matrix L){
+        float scalar = (float) 2.0 * Matrix.dot(N.asArray(), L.asArray());
+        return normalize(N.multiply(scalar).subtract(L).asArray(), 0);
     }
 
     public void exportImage() {
